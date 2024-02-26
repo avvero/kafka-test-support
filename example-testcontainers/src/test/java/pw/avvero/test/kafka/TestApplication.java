@@ -1,4 +1,4 @@
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

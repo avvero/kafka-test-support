@@ -1,4 +1,4 @@
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -10,7 +10,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -30,7 +29,7 @@ public class RecordCaptor implements RecordCaptorAccess {
             headers.put(header.key(), new String(header.value(), UTF_8));
         }
         Object value = record.value();
-        log.debug("[EMK] Record captured for topic {} for key {}\n    Headers: {}\n    Value: {}", topic, key, headers, value);
+        log.debug("[KTS] Record captured for topic {} for key {}\n    Headers: {}\n    Value: {}", topic, key, headers, value);
         topicKeyRecords.computeIfAbsent(topic, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(key, k -> new CopyOnWriteArrayList<>())
                 .add(value);

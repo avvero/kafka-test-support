@@ -1,4 +1,4 @@
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,7 +15,7 @@ public class Consumer {
 
     private final RecordCaptor recordCaptor;
 
-    @KafkaListener(id = "eventCaptor", topics = "#{'${emk.event-captor.topics}'.split(',')}", groupId = "test")
+    @KafkaListener(id = "recordCaptor", topics = "#{'${test.record-captor.topics}'.split(',')}", groupId = "test")
     public void eventCaptorListener(ConsumerRecord<Object, Object> record) {
         recordCaptor.capture(record);
     }

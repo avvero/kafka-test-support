@@ -1,4 +1,4 @@
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import org.springframework.boot.devtools.restart.RestartScope;
 import org.springframework.boot.test.context.TestConfiguration;

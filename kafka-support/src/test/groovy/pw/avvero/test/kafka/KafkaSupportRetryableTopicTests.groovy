@@ -1,4 +1,5 @@
-package pw.avvero.emk
+package pw.avvero.test.kafka
+
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -11,7 +12,6 @@ import org.springframework.messaging.support.MessageBuilder
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
-
 import spock.lang.Specification
 
 @SpringBootTest
@@ -19,26 +19,31 @@ import spock.lang.Specification
 @AutoConfigureMockMvc
 @ContextConfiguration(classes = [TestApplication, KafkaContainerConfiguration])
 @DirtiesContext
-class KafkaTests extends Specification {
+class KafkaSupportRetryableTopicTests extends Specification {
 
     @Autowired
-    Consumer consumer
+    RecordCaptor recordCaptor
     @Autowired
     KafkaTemplate<Object, Object> kafkaTemplate
     @Autowired
     ApplicationContext applicationContext
 
-    def "Can send event to topic and receive event from it"() {
+    def "Can send message to topic and receive message from it"() {
         setup:
         KafkaSupport.waitForPartitionAssignment(applicationContext)
+        def key = IdGenerator.getNext()
         when:
         Message message = MessageBuilder
-                .withPayload("value1")
-                .setHeader(KafkaHeaders.TOPIC, "topic1")
+                .withPayload("value")
+                .setHeader(KafkaHeaders.TOPIC, "topicBroken")
+                .setHeader(KafkaHeaders.KEY, key)
                 .build()
         kafkaTemplate.send(message).get()
-        Thread.sleep(2000) // TODO
+        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
-        consumer.events == ["value1"]
+        recordCaptor.getRecords("topicBroken", key) == ["value"]
+        recordCaptor.getRecords("topicBroken-retry", key).size() == 2
+//        recordCaptor.awaitAtMost(1, 200).getRecords("topicBroken-dlt", key).size() == 1
+        recordCaptor.getRecords("topicBroken-dlt", key).size() == 1
     }
 }

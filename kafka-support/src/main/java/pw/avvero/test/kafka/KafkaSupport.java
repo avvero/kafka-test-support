@@ -1,4 +1,4 @@
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
@@ -40,23 +40,23 @@ public class KafkaSupport {
         detectMultipleContainersForSameTopicWithinSameGroup(applicationContext);
         //
         KafkaListenerEndpointRegistry registry = applicationContext.getBean(KafkaListenerEndpointRegistry.class);
-        log.debug("[EMK] Waiting for partition assignment is requested");
+        log.debug("[KTS] Waiting for partition assignment is requested");
         for (MessageListenerContainer messageListenerContainer : registry.getListenerContainers()) {
             long startTime = System.currentTimeMillis();
-            log.debug("[EMK] Waiting for partition assignment started for {}", messageListenerContainer.getListenerId());
+            log.debug("[KTS] Waiting for partition assignment started for {}", messageListenerContainer.getListenerId());
             int partitions = ContainerTestUtils.waitForAssignment(messageListenerContainer, 1);
             long gauge = System.currentTimeMillis() - startTime;
             if (partitions > 0) {
                 String topics = Objects.requireNonNull(messageListenerContainer.getAssignedPartitions()).stream()
                         .map(TopicPartition::topic).collect(Collectors.joining(", "));
-                log.debug("[EMK] Waiting for partition assignment for {} is succeeded in {} ms, topics: {}",
+                log.debug("[KTS] Waiting for partition assignment for {} is succeeded in {} ms, topics: {}",
                         messageListenerContainer.getListenerId(), gauge, topics);
             } else {
-                log.error("[EMK] Waiting for partition assignment for {} is failed in {} ms",
+                log.error("[KTS] Waiting for partition assignment for {} is failed in {} ms",
                         messageListenerContainer.getListenerId(), gauge);
             }
         }
-        log.debug("[EMK] At least one partition is assigned for every container");
+        log.debug("[KTS] At least one partition is assigned for every container");
     }
 
     /**
@@ -120,7 +120,7 @@ public class KafkaSupport {
      */
     public static void waitForPartitionOffsetCommit(List<String> bootstrapServers)
             throws InterruptedException, ExecutionException {
-        log.debug("[EMK] Waiting for offset commit is requested");
+        log.debug("[KTS] Waiting for offset commit is requested");
         long startTime = System.currentTimeMillis();
         try (AdminClient adminClient = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
             Set<String> consumerGroups = adminClient.listConsumerGroups().all().get()
@@ -143,10 +143,10 @@ public class KafkaSupport {
                 for (String consumerGroup : consumerGroups) {
                     Long consumerGroupOffset = consumerGroupsOffsets.get(consumerGroup);
                     if (consumerGroupOffset == null) {
-                        log.trace("[EMK] Waiting for offset commit for topic {} in group {}: topic is not under capture",
+                        log.trace("[KTS] Waiting for offset commit for topic {} in group {}: topic is not under capture",
                                 tp.topic(), consumerGroup);
                     } else {
-                        log.trace("[EMK] Waiting for offset commit for topic {} in group {}: [topic offset: {} != group offset: {}]",
+                        log.trace("[KTS] Waiting for offset commit for topic {} in group {}: [topic offset: {} != group offset: {}]",
                                 tp.topic(), consumerGroup, consumerGroupOffset, topicOffset);
                     }
                     if (consumerGroupOffset != null && consumerGroupOffset != topicOffset) {
@@ -156,7 +156,7 @@ public class KafkaSupport {
                         catch (@SuppressWarnings("unused") InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
-                        log.warn("[EMK] Consumer group {} offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
+                        log.warn("[KTS] Consumer group {} offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
                                         "Waiting for further message processing before proceeding. Refreshing end offsets and reevaluating.",
                                 consumerGroup, tp.topic(), consumerGroupOffset, topicOffset);
                         topicsOffsets = getOffsetsForTopics(adminClient, topics);
@@ -169,7 +169,7 @@ public class KafkaSupport {
                 }
             }
         }
-        log.debug("[EMK] Waiting for offset commit is finished in {} ms", System.currentTimeMillis() - startTime);
+        log.debug("[KTS] Waiting for offset commit is finished in {} ms", System.currentTimeMillis() - startTime);
     }
 
     public static Map<TopicPartition, Long> getOffsetsForTopics(AdminClient adminClient, Set<String> topics)

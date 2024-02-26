@@ -1,4 +1,4 @@
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

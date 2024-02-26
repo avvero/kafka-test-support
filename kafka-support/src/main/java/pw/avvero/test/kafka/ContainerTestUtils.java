@@ -14,11 +14,11 @@
  * limitations under the License.
  *
  * Modified by Belyaev Anton - modified methods:
- * - pw.avvero.emk.ContainerTestUtils.waitForAssignment,
- * - pw.avvero.emk.ContainerTestUtils.waitForSingleContainerAssignment.
+ * - pw.avvero.test.kafka.ContainerTestUtils.waitForAssignment,
+ * - pw.avvero.test.kafka.ContainerTestUtils.waitForSingleContainerAssignment.
  */
 
-package pw.avvero.emk;
+package pw.avvero.test.kafka;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

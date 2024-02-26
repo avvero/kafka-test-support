@@ -1,5 +1,4 @@
-package pw.avvero.emk
-
+package pw.avvero.test.kafka
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -19,31 +18,26 @@ import spock.lang.Specification
 @AutoConfigureMockMvc
 @ContextConfiguration(classes = [TestApplication, KafkaContainerConfiguration])
 @DirtiesContext
-class KafkaSupportRetryableTopicTests extends Specification {
+class KafkaTests extends Specification {
 
     @Autowired
-    RecordCaptor recordCaptor
+    Consumer consumer
     @Autowired
     KafkaTemplate<Object, Object> kafkaTemplate
     @Autowired
     ApplicationContext applicationContext
 
-    def "Can send message to topic and receive message from it"() {
+    def "Can send event to topic and receive event from it"() {
         setup:
         KafkaSupport.waitForPartitionAssignment(applicationContext)
-        def key = IdGenerator.getNext()
         when:
         Message message = MessageBuilder
-                .withPayload("value")
-                .setHeader(KafkaHeaders.TOPIC, "topicBroken")
-                .setHeader(KafkaHeaders.KEY, key)
+                .withPayload("value1")
+                .setHeader(KafkaHeaders.TOPIC, "topic1")
                 .build()
         kafkaTemplate.send(message).get()
-        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
+        Thread.sleep(2000) // TODO
         then:
-        recordCaptor.getRecords("topicBroken", key) == ["value"]
-        recordCaptor.getRecords("topicBroken-retry", key).size() == 2
-//        recordCaptor.awaitAtMost(1, 200).getRecords("topicBroken-dlt", key).size() == 1
-        recordCaptor.getRecords("topicBroken-dlt", key).size() == 1
+        consumer.events == ["value1"]
     }
 }
