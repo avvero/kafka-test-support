@@ -1,12 +1,4 @@
-include 'example-spring-embedded-kafka'
 include 'example-testcontainers'
-include 'example-embedded-kafka-container'
-
-include 'emk-application'
-include 'emk-testcontainers'
-include 'test-live-emk-application'
-
 include 'kafka-support'
-include 'benchmark'
 
-rootProject.name = 'embedded-kafka'
+rootProject.name = 'kafka-test-support'

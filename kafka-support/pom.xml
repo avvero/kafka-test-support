@@ -4,13 +4,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>pw.avvero</groupId>
-    <artifactId>emk-testcontainers</artifactId>
-    <version>1.0.1</version>
+    <artifactId>kafka-test-support</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>EmbeddedKafka Testcontainers Support</name>
-    <description>Utilizes org.springframework.kafka.test.EmbeddedKafkaBroker to have opportunity to provide native kafka in docker - https://github.com/avvero/embedded-kafka</description>
-    <url>https://github.com/avvero/embedded-kafka</url>
+    <name>Kafka test support</name>
+    <description>Provides utility functions for Kafka integration within Spring applications, focusing on partition assignment
+        and offset commit verification. - https://github.com/avvero/kafka-test-support</description>
+    <url>https://github.com/avvero/kafka-test-support</url>
 
     <licenses>
         <license>
@@ -26,9 +27,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:avvero/embedded-kafka.git</connection>
-        <developerConnection>scm:git:https://github.com/avvero/embedded-kafka.git</developerConnection>
-        <url>https://github.com/avvero/embedded-kafka</url>
+        <connection>scm:git:git@github.com:avvero/kafka-test-support.git</connection>
+        <developerConnection>scm:git:https://github.com/avvero/kafka-test-support.git</developerConnection>
+        <url>https://github.com/avvero/kafka-test-support</url>
     </scm>
 
     <properties>
@@ -37,8 +38,7 @@
         <lombok.version>1.18.30</lombok.version>
         <spring.boot.version>3.2.0</spring.boot.version>
         <spring.kafka.version>3.1.1</spring.kafka.version>
-        <groovy.version>3.0.19</groovy.version>
-        <spock.version>2.3-groovy-3.0</spock.version>
+        <awaitility.version>4.0.2</awaitility.version>
     </properties>
 
     <dependencies>
@@ -52,14 +52,24 @@
 
         <!-- Main Dependencies -->
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>kafka</artifactId>
-            <version>1.19.3</version>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+            <version>${spring.kafka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+            <version>${spring.kafka.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-testcontainers</artifactId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
             <version>${spring.boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
         </dependency>
 
         <!-- Test Dependencies -->

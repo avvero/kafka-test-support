@@ -22,8 +22,8 @@ import static org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS
 @Slf4j
 public class KafkaSupport {
 
-    public static final int OFFSET_COMMIT_WAIT_ATTEMPTS_MAX = 200;
-    public static final int OFFSET_COMMIT_WAIT_TIME = 50;
+    public static int OFFSET_COMMIT_WAIT_ATTEMPTS_MAX = 200;
+    public static int OFFSET_COMMIT_WAIT_TIME = 50;
 
     /**
      * Waits for the partition assignment for all Kafka listener containers in the application context.
