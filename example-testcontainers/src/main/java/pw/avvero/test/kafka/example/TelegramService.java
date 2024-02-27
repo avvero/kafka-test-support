@@ -24,6 +24,6 @@ public class TelegramService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<SendMessageRequest> requestEntity = new HttpEntity<>(request, headers);
-        Object response = restTemplate.postForObject(url + "/sendMessage", requestEntity, Object.class);
+        restTemplate.postForObject(url + "/sendMessage", requestEntity, Object.class);
     }
 }

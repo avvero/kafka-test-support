@@ -28,6 +28,7 @@ dependencies {
     testImplementation 'org.spockframework:spock-spring:2.3-groovy-3.0'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:kafka'
+    testImplementation "org.assertj:assertj-core:3.11.1"
 
     testImplementation project(":kafka-support")
 }

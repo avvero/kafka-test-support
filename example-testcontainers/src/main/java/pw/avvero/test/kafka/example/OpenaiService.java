@@ -16,7 +16,7 @@ public class OpenaiService {
     @Value("${openai.uri}")
     private String url;
 
-    public record CompletionRequest(String message) {
+    public record CompletionRequest(String content) {
     }
 
     public record CompletionResponse(String content) {

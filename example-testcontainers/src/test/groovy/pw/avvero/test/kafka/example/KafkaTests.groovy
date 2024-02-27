@@ -1,5 +1,6 @@
 package pw.avvero.test.kafka.example
 
+import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -46,18 +47,14 @@ class KafkaTests extends Specification {
     @Autowired
     MockMvc mockMvc
     @Shared
-    MockRestServiceServer telegramMock
-    @Shared
-    MockRestServiceServer openaiMock
+    MockRestServiceServer restMock
 
     def setup() {
-        telegramMock = MockRestServiceServer.bindTo(restTemplate).ignoreExpectOrder(true).build();
-        openaiMock = MockRestServiceServer.bindTo(restTemplate).ignoreExpectOrder(true).build();
+        restMock = MockRestServiceServer.bindTo(restTemplate).ignoreExpectOrder(true).build()
     }
 
     def cleanup() {
-        telegramMock.reset()
-        openaiMock.reset()
+        restMock.reset()
     }
 
     def "Can send event to topic and receive event from it"() {
@@ -65,13 +62,13 @@ class KafkaTests extends Specification {
         KafkaSupport.waitForPartitionAssignment(applicationContext)
         and:
         def openaiRequestCaptor = new RequestCaptor()
-        telegramMock.expect(manyTimes(), requestTo("https://api.openai.com/v1/chat/completions"))
+        restMock.expect(manyTimes(), requestTo("https://api.openai.com/v1/chat/completions"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(openaiRequestCaptor)
-                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+                .andRespond(withSuccess('{"content": "Hi, how can i help you?"}', MediaType.APPLICATION_JSON))
         and:
         def telegramRequestCaptor = new RequestCaptor()
-        telegramMock.expect(manyTimes(), requestTo("https://api.telegram.org/sendMessage"))
+        restMock.expect(manyTimes(), requestTo("https://api.telegram.org/sendMessage"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(telegramRequestCaptor)
                 .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
@@ -94,7 +91,14 @@ class KafkaTests extends Specification {
         KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
         openaiRequestCaptor.times == 1
+        JSONAssert.assertEquals("""{
+            "content": "Hello!"
+        }""", openaiRequestCaptor.bodyString, false)
         and:
         telegramRequestCaptor.times == 1
+        JSONAssert.assertEquals("""{
+            "chatId": "20000000",
+            "text": "Hi, how can i help you?"
+        }""", telegramRequestCaptor.bodyString, false)
     }
 }
