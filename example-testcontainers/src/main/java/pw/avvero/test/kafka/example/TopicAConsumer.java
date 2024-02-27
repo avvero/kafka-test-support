@@ -28,12 +28,12 @@ public class TopicAConsumer {
     public void consume(@Payload String body) throws JsonProcessingException, ExecutionException, InterruptedException {
         TelegramWebhookMessage webhookMessage = objectMapper.readValue(body, TelegramWebhookMessage.class);
         String content = openaiService.process(webhookMessage.getMessage().getText());
-        SendMessageRequest sendMessageRequest = new SendMessageRequest(webhookMessage.getMessage().getChat().getId(),
+        SendMessageRequest sendMessageRequest = new SendMessageRequest(
+                webhookMessage.getMessage().getChat().getId(),
                 content);
         Message message = MessageBuilder
                 .withPayload(objectMapper.writeValueAsString(sendMessageRequest))
                 .setHeader(KafkaHeaders.TOPIC, "topicB")
-//                .setHeader(KafkaHeaders.KEY, key)
                 .build();
         kafkaTemplate.send(message).get();
     }

@@ -10,14 +10,8 @@ public class TelegramWebhookMessage implements Serializable {
 
     @Data
     public static class Message implements Serializable {
-        private User from;
         private Chat chat;
         private String text;
-    }
-
-    @Data
-    public static class User implements Serializable {
-        private String id;
     }
 
     @Data

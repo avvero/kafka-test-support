@@ -22,7 +22,6 @@ public class ExampleController {
         Message message = MessageBuilder
                 .withPayload(body)
                 .setHeader(KafkaHeaders.TOPIC, "topicA")
-//                .setHeader(KafkaHeaders.KEY, key)
                 .build();
         kafkaTemplate.send(message).get();
     }
