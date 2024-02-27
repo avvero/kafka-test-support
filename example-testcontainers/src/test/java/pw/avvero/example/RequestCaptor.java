@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka.example;
+package pw.avvero.example;
 
 import groovy.json.JsonSlurper;
 import lombok.Getter;
