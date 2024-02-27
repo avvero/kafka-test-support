@@ -4,5 +4,5 @@ import java.util.List;
 
 public interface RecordCaptorAccess {
 
-    List<Object> getRecords(String topic, Object key);
+    List<RecordSnapshot> getRecords(String topic, Object key);
 }

@@ -21,7 +21,7 @@ import spock.lang.Specification
 class KafkaTests extends Specification {
 
     @Autowired
-    Consumer consumer
+    RecordCaptor recordCaptor
     @Autowired
     KafkaTemplate<Object, Object> kafkaTemplate
     @Autowired
@@ -34,10 +34,13 @@ class KafkaTests extends Specification {
         Message message = MessageBuilder
                 .withPayload("value1")
                 .setHeader(KafkaHeaders.TOPIC, "topic1")
+                .setHeader("customHeader", "header1")
+                .setHeader("customHeader2", 1)
                 .build()
         kafkaTemplate.send(message).get()
-        Thread.sleep(2000) // TODO
+        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
-        consumer.events == ["value1"]
+        recordCaptor.getRecords("topic1").last.headers["customHeader"] == "header1"
+        recordCaptor.getRecords("topic1").last.value == "value1"
     }
 }

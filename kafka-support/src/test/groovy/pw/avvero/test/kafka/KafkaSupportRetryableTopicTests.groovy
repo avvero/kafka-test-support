@@ -41,7 +41,7 @@ class KafkaSupportRetryableTopicTests extends Specification {
         kafkaTemplate.send(message).get()
         KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
-        recordCaptor.getRecords("topicBroken", key) == ["value"]
+        recordCaptor.getRecords("topicBroken", key).value == ["value"]
         recordCaptor.getRecords("topicBroken-retry", key).size() == 2
 //        recordCaptor.awaitAtMost(1, 200).getRecords("topicBroken-dlt", key).size() == 1
         recordCaptor.getRecords("topicBroken-dlt", key).size() == 1

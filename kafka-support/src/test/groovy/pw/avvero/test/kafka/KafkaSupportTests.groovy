@@ -40,7 +40,7 @@ class KafkaSupportTests extends Specification {
         kafkaTemplate.send(message).get()
         KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
-        recordCaptor.getRecords("topic1", key) == ["value1"]
+        recordCaptor.getRecords("topic1", key).value == ["value1"]
     }
 
     def "Can send many messages to the same topic and receive them from it"() {
