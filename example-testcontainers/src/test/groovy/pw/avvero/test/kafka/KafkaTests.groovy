@@ -41,6 +41,7 @@ class KafkaTests extends Specification {
         KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
         recordCaptor.getRecords("topic1").last.headers["customHeader"] == "header1"
+        recordCaptor.getRecords("topic1").last.headers["customHeader2"] == 1
         recordCaptor.getRecords("topic1").last.value == "value1"
     }
 }

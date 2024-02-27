@@ -27,7 +27,7 @@ class KafkaSupportTests extends Specification {
     @Autowired
     ApplicationContext applicationContext
 
-    def "Can send message to topic and receive message from it"() {
+    def "Can send message to topic and receive message from it (no key)"() {
         setup:
         KafkaSupport.waitForPartitionAssignment(applicationContext)
         def key = IdGenerator.getNext()
@@ -35,12 +35,37 @@ class KafkaSupportTests extends Specification {
         Message message = MessageBuilder
                 .withPayload("value1")
                 .setHeader(KafkaHeaders.TOPIC, "topic1")
+                .setHeader("customHeader", "header1")
+                .setHeader("customHeader2", 1)
+                .build()
+        kafkaTemplate.send(message).get()
+        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
+        then:
+        recordCaptor.getRecords("topic1").last.headers["customHeader"] == "header1"
+        recordCaptor.getRecords("topic1").last.headers["customHeader2"] == 1
+        recordCaptor.getRecords("topic1").last.value == "value1"
+    }
+
+    def "Can send message to topic and receive message from it"() {
+        setup:
+        KafkaSupport.waitForPartitionAssignment(applicationContext)
+        def key = IdGenerator.next
+        when:
+        Message message = MessageBuilder
+                .withPayload("value1")
+                .setHeader(KafkaHeaders.TOPIC, "topic1")
+                .setHeader("customHeader", "header1")
+                .setHeader("customHeader2", 1)
                 .setHeader(KafkaHeaders.KEY, key)
                 .build()
         kafkaTemplate.send(message).get()
         KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
         then:
-        recordCaptor.getRecords("topic1", key).value == ["value1"]
+        recordCaptor.getRecords("topic1", key).last.headers["customHeader"] == "header1"
+        recordCaptor.getRecords("topic1", key).last.headers["customHeader2"] == 1
+        recordCaptor.getRecords("topic1", key).last.value == "value1"
+        and:
+        recordCaptor.getRecords("topic1", IdGenerator.next) == []
     }
 
     def "Can send many messages to the same topic and receive them from it"() {
