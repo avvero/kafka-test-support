@@ -6,18 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Headers;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Data
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class RecordCaptorConsumer {
 
     private final RecordCaptor recordCaptor;
-    private final RecordSnapshotMapper mapper = new RecordSnapshotMapper();
+    private final RecordSnapshotMapper mapper;
 
     /**
      * Consume a {@link ConsumerRecord}.

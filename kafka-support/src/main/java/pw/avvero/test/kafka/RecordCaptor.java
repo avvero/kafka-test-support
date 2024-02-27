@@ -2,7 +2,6 @@ package pw.avvero.test.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
-import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +13,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Component
 public class RecordCaptor implements RecordCaptorAccess {
 
     private final Map<String, Map<Object, List<RecordSnapshot>>> topicKeyRecords = new ConcurrentHashMap<>();

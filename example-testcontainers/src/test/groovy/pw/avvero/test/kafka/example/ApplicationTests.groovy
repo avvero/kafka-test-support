@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka
+package pw.avvero.test.kafka.example
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
