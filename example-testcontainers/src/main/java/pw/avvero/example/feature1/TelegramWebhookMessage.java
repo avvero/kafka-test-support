@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka.example;
+package pw.avvero.example.feature1;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka.example;
+package pw.avvero.example;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

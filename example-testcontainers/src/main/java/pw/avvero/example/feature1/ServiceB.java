@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka.example;
+package pw.avvero.example.feature1;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,35 +13,26 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ExecutionException;
 
-import static pw.avvero.test.kafka.example.TelegramService.*;
-
 @Component
 @RequiredArgsConstructor
-public class TopicAConsumer {
+public class ServiceB {
 
     private final ObjectMapper objectMapper;
     private final OpenaiService openaiService;
-    private final TelegramService telegramService;
     private final KafkaTemplate<Object, Object> kafkaTemplate;
 
     @KafkaListener(id = "topicAConsumer", topics = "topicA")
-    public void consume(@Payload String body) throws JsonProcessingException, ExecutionException, InterruptedException {
-        TelegramWebhookMessage webhookMessage = objectMapper.readValue(body, TelegramWebhookMessage.class);
-        String content = openaiService.process(webhookMessage.getMessage().getText());
-        SendMessageRequest sendMessageRequest = new SendMessageRequest(
+    public void consume(@Payload String webhookRequest) throws JsonProcessingException, ExecutionException,
+            InterruptedException {
+        TelegramWebhookMessage webhookMessage = objectMapper.readValue(webhookRequest, TelegramWebhookMessage.class);
+        String openAiResponseContent = openaiService.process(webhookMessage.getMessage().getText());
+        TelegramService.SendMessageRequest sendMessageRequest = new TelegramService.SendMessageRequest(
                 webhookMessage.getMessage().getChat().getId(),
-                content);
+                openAiResponseContent);
         Message message = MessageBuilder
                 .withPayload(objectMapper.writeValueAsString(sendMessageRequest))
                 .setHeader(KafkaHeaders.TOPIC, "topicB")
                 .build();
         kafkaTemplate.send(message).get();
     }
-
-    @KafkaListener(id = "topicBConsumer", topics = "topicB")
-    public void consume2(@Payload String body) throws JsonProcessingException, ExecutionException, InterruptedException {
-        SendMessageRequest sendMessageRequest = objectMapper.readValue(body, SendMessageRequest.class);
-        telegramService.sendMessage(sendMessageRequest);
-    }
-
 }

@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka.example;
+package pw.avvero.example.feature1;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;

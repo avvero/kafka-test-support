@@ -1,4 +1,4 @@
-package pw.avvero.test.kafka.example
+package pw.avvero.example.feature1
 
 import org.skyscreamer.jsonassert.JSONAssert
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,12 +10,14 @@ import org.springframework.http.MediaType
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.web.client.RestTemplate
 import pw.avvero.test.kafka.KafkaSupport
 import pw.avvero.test.kafka.RecordCaptor
+import pw.avvero.test.kafka.example.KafkaContainerConfiguration
+import pw.avvero.test.kafka.example.RecordCaptorConfiguration
+import pw.avvero.test.kafka.example.RequestCaptor
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -31,12 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles(profiles = "test")
 @AutoConfigureMockMvc
 @ContextConfiguration(classes = [KafkaContainerConfiguration, RecordCaptorConfiguration])
-@TestPropertySource(properties = [
-        "telegram.uri=https://api.telegram.org",
-        "openai.uri=https://api.openai.com"
-])
 @DirtiesContext
-class KafkaTests extends Specification {
+class FeatureTests extends Specification {
 
     @Autowired
     RecordCaptor recordCaptor
