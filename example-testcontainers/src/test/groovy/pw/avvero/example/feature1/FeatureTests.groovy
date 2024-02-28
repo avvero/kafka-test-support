@@ -55,48 +55,48 @@ class FeatureTests extends Specification {
         restMock.reset()
     }
 
-    def "Can send event to topic and receive event from it"() {
-        setup:
-        KafkaSupport.waitForPartitionAssignment(applicationContext)
-        and:
-        def openaiRequestCaptor = new RequestCaptor()
-        restMock.expect(manyTimes(), requestTo("https://api.openai.com/v1/chat/completions"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(openaiRequestCaptor)
-                .andRespond(withSuccess('{"content": "Hi, how can i help you?"}', MediaType.APPLICATION_JSON))
-        and:
-        def telegramRequestCaptor = new RequestCaptor()
-        restMock.expect(manyTimes(), requestTo("https://api.telegram.org/sendMessage"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(telegramRequestCaptor)
-                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
-        when:
-        mockMvc.perform(post("/telegram/webhook")
-                .contentType(APPLICATION_JSON_VALUE)
-                .content("""{
-                  "message": {
-                    "from": {
-                      "id": 10000000
-                    },
-                    "chat": {
-                      "id": 20000000
-                    },
-                    "text": "Hello!"
-                  }
-                }""".toString())
-                .accept(APPLICATION_JSON_VALUE))
-                .andExpect(status().isOk())
-        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)
-        then:
-        openaiRequestCaptor.times == 1
-        JSONAssert.assertEquals("""{
-            "content": "Hello!"
-        }""", openaiRequestCaptor.bodyString, false)
-        and:
-        telegramRequestCaptor.times == 1
-        JSONAssert.assertEquals("""{
-            "chatId": "20000000",
-            "text": "Hi, how can i help you?"
-        }""", telegramRequestCaptor.bodyString, false)
-    }
+def "User Message Processing with OpenAI"() {
+    setup:
+    KafkaSupport.waitForPartitionAssignment(applicationContext)                           // 1
+    and:
+    def openaiRequestCaptor = new RequestCaptor()
+    restMock.expect(manyTimes(), requestTo("https://api.openai.com/v1/chat/completions")) // 2
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(openaiRequestCaptor)
+            .andRespond(withSuccess('{"content": "Hi, how can i help you?"}', MediaType.APPLICATION_JSON))
+    and:
+    def telegramRequestCaptor = new RequestCaptor()
+    restMock.expect(manyTimes(), requestTo("https://api.telegram.org/sendMessage"))       // 3
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(telegramRequestCaptor)
+            .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+    when:
+    mockMvc.perform(post("/telegram/webhook")                                             // 4
+            .contentType(APPLICATION_JSON_VALUE)
+            .content("""{
+              "message": {
+                "from": {
+                  "id": 10000000
+                },
+                "chat": {
+                  "id": 20000000
+                },
+                "text": "Hello!"
+              }
+            }""".toString())
+            .accept(APPLICATION_JSON_VALUE))
+            .andExpect(status().isOk())
+    KafkaSupport.waitForPartitionOffsetCommit(applicationContext)                         // 5
+    then:
+    openaiRequestCaptor.times == 1                                                        // 6
+    JSONAssert.assertEquals("""{
+        "content": "Hello!"
+    }""", openaiRequestCaptor.bodyString, false)
+    and:
+    telegramRequestCaptor.times == 1
+    JSONAssert.assertEquals("""{
+        "chatId": "20000000",
+        "text": "Hi, how can i help you?"
+    }""", telegramRequestCaptor.bodyString, false)
+}
 }
