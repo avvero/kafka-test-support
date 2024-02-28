@@ -1,5 +1,9 @@
 # Kafka test support
 
+<div align="center">
+    <img src="assets/image.png" width="400" height="auto">
+</div>
+
 Provides utility functions for Kafka integration within Spring applications, focusing on partition assignment
 and offset commit verification. This library supports ensuring that Kafka listeners are properly assigned to
 partitions and that offsets are committed as expected across consumer groups and topics. It is designed to be
