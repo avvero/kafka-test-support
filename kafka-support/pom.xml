@@ -181,6 +181,7 @@
                     <publishingServerId>central</publishingServerId>
                     <tokenAuth>true</tokenAuth>
                     <deploymentName>kafka-support_${version}</deploymentName>
+                    <autoPublish>true</autoPublish>
                 </configuration>
             </plugin>
             <plugin>
