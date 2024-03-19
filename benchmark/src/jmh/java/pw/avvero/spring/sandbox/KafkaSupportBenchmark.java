@@ -1,9 +1,12 @@
 package pw.avvero.spring.sandbox;
 
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.openjdk.jmh.annotations.Benchmark;
 import pw.avvero.emk.EmbeddedKafkaContainer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.Collections.singletonMap;
@@ -26,9 +29,35 @@ public class KafkaSupportBenchmark {
         container.stop();
     }
 
+    @Benchmark
+    public void waitForPartitionAssignmentForOneTopic() throws ExecutionException, InterruptedException {
+        EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
+        container.start();
+        createTopics(container.getBootstrapServers(), 1);
+        container.stop();
+    }
+
+    @Benchmark
+    public void waitForPartitionAssignmentForOneHundredTopics() throws ExecutionException, InterruptedException {
+        EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
+        container.start();
+        createTopics(container.getBootstrapServers(), 100);
+        container.stop();
+    }
+
     private void checkKafkaReadiness(String bootstrapServers) throws ExecutionException, InterruptedException {
-        AdminClient admin = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
-        admin.listTopics().names().get();
-        admin.close();
+        try(AdminClient admin = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
+            admin.listTopics().names().get();
+        }
+    }
+
+    private void createTopics(String bootstrapServers, int number) {
+        List<NewTopic> topics = new ArrayList<>(number);
+        for (int i = 0; i < number; i++) {
+            topics.add(new NewTopic("topic" + i, 1, (short) 1));
+        }
+        try(AdminClient admin = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
+            admin.createTopics(topics);
+        }
     }
 }
