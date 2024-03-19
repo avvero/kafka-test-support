@@ -4,6 +4,7 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.openjdk.jmh.annotations.Benchmark;
 import pw.avvero.emk.EmbeddedKafkaContainer;
+import pw.avvero.test.kafka.KafkaSupport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,10 +31,27 @@ public class KafkaSupportBenchmark {
     }
 
     @Benchmark
+    public void startAndCreateOneTopic() throws ExecutionException, InterruptedException {
+        EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
+        container.start();
+        createTopics(container.getBootstrapServers(), 1);
+        container.stop();
+    }
+
+    @Benchmark
+    public void startAndCreateOneHundredTopics() throws ExecutionException, InterruptedException {
+        EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
+        container.start();
+        createTopics(container.getBootstrapServers(), 100);
+        container.stop();
+    }
+
+    @Benchmark
     public void waitForPartitionAssignmentForOneTopic() throws ExecutionException, InterruptedException {
         EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
         container.start();
         createTopics(container.getBootstrapServers(), 1);
+        KafkaSupport.waitForPartitionOffsetCommit(List.of(container.getBootstrapServers()));
         container.stop();
     }
 
@@ -42,8 +60,11 @@ public class KafkaSupportBenchmark {
         EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
         container.start();
         createTopics(container.getBootstrapServers(), 100);
+        KafkaSupport.waitForPartitionOffsetCommit(List.of(container.getBootstrapServers()));
         container.stop();
     }
+
+    //
 
     private void checkKafkaReadiness(String bootstrapServers) throws ExecutionException, InterruptedException {
         try(AdminClient admin = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {

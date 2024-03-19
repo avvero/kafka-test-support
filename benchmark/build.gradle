@@ -15,6 +15,7 @@ dependencies {
     implementation "org.springframework.kafka:spring-kafka-test:3.1.1"
     implementation 'org.testcontainers:kafka'
     implementation 'pw.avvero:emk-testcontainers:1.0.0'
+    implementation project(":kafka-support")
 }
 
 tasks.named('test') {
