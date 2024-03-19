@@ -17,7 +17,7 @@ import spock.lang.Specification
 @SpringBootTest
 @ActiveProfiles(profiles = "test")
 @AutoConfigureMockMvc
-@ContextConfiguration(classes = [TestApplication, KafkaContainerConfiguration])
+@ContextConfiguration(classes = [TestApplication, KafkaContainerConfiguration, RecordCaptorConfiguration])
 @DirtiesContext
 class KafkaSupportRetryableTopicTests extends Specification {
 

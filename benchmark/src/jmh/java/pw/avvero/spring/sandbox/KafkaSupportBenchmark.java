@@ -47,7 +47,7 @@ public class KafkaSupportBenchmark {
     }
 
     @Benchmark
-    public void waitForPartitionAssignmentForOneTopic() throws ExecutionException, InterruptedException {
+    public void waitForPartitionOffsetCommitForOneTopic() throws ExecutionException, InterruptedException {
         EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
         container.start();
         createTopics(container.getBootstrapServers(), 1);
@@ -56,7 +56,7 @@ public class KafkaSupportBenchmark {
     }
 
     @Benchmark
-    public void waitForPartitionAssignmentForOneHundredTopics() throws ExecutionException, InterruptedException {
+    public void waitForPartitionOffsetCommitForOneHundredTopics() throws ExecutionException, InterruptedException {
         EmbeddedKafkaContainer container = new EmbeddedKafkaContainer("avvero/emk-native:1.0.0");
         container.start();
         createTopics(container.getBootstrapServers(), 100);

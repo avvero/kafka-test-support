@@ -118,54 +118,64 @@ public class KafkaSupport {
      * @throws InterruptedException if the thread is interrupted while waiting for the offsets to commit.
      * @throws ExecutionException if an error occurs during the fetching of consumer group or topic information.
      */
-    public static void waitForPartitionOffsetCommit(List<String> bootstrapServers)
+    public static void waitForPartitionOffsetCommit(List<String> bootstrapServers) {
+        try (AdminClient adminClient = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
+            try {
+                waitForPartitionOffsetCommit(adminClient);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    public static void waitForPartitionOffsetCommit(AdminClient adminClient)
             throws InterruptedException, ExecutionException {
         log.debug("[KTS] Waiting for offset commit is requested");
         long startTime = System.currentTimeMillis();
-        try (AdminClient adminClient = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
-            Set<String> consumerGroups = adminClient.listConsumerGroups().all().get()
-                    .stream().map(ConsumerGroupListing::groupId).collect(Collectors.toSet());
-            // List the topics available in the cluster
-            Set<String> topics = adminClient.listTopics().namesToListings().get().keySet();
-            Map<TopicPartition, Long> topicsOffsets = getOffsetsForTopics(adminClient, topics);
-            Queue<TopicPartition> topicQueue = new LinkedList<>(topicsOffsets.keySet());
-            int attempt = 0;
-            while (!topicQueue.isEmpty()) {
-                TopicPartition tp = topicQueue.remove();
-                long topicOffset = topicsOffsets.get(tp);
-                if (++attempt > OFFSET_COMMIT_WAIT_ATTEMPTS_MAX) {
-                    throw new RuntimeException("Exceeded maximum attempts (" + OFFSET_COMMIT_WAIT_ATTEMPTS_MAX
-                            + ") waiting for offset commit for partition " + tp + ".");
+        Set<String> consumerGroups = adminClient.listConsumerGroups().all().get()
+                .stream().map(ConsumerGroupListing::groupId).collect(Collectors.toSet());
+        // List the topics available in the cluster
+        Set<String> topics = adminClient.listTopics().namesToListings().get().keySet();
+        Map<TopicPartition, Long> topicsOffsets = getOffsetsForTopics(adminClient, topics);
+        Queue<TopicPartition> topicQueue = new LinkedList<>(topicsOffsets.keySet());
+        int attempt = 0;
+        while (!topicQueue.isEmpty()) {
+            TopicPartition tp = topicQueue.remove();
+            long topicOffset = topicsOffsets.get(tp);
+            if (++attempt > OFFSET_COMMIT_WAIT_ATTEMPTS_MAX) {
+                throw new RuntimeException("Exceeded maximum attempts (" + OFFSET_COMMIT_WAIT_ATTEMPTS_MAX
+                        + ") waiting for offset commit for partition " + tp + ".");
+            }
+            // Get current offsets for partitions
+            // TODO slow
+            Map<String, Long> consumerGroupsOffsets = getOffsetsForConsumerGroups(adminClient, consumerGroups, tp);
+            for (String consumerGroup : consumerGroups) {
+                Long consumerGroupOffset = consumerGroupsOffsets.get(consumerGroup);
+                if (consumerGroupOffset == null) {
+                    log.trace("[KTS] Waiting for offset commit for topic {} in group {}: topic is not under capture",
+                            tp.topic(), consumerGroup);
+                } else {
+                    log.trace("[KTS] Waiting for offset commit for topic {} in group {}: [topic offset: {} != group offset: {}]",
+                            tp.topic(), consumerGroup, consumerGroupOffset, topicOffset);
                 }
-                // Get current offsets for partitions
-                // TODO slow
-                Map<String, Long> consumerGroupsOffsets = getOffsetsForConsumerGroups(adminClient, consumerGroups, tp);
-                for (String consumerGroup : consumerGroups) {
-                    Long consumerGroupOffset = consumerGroupsOffsets.get(consumerGroup);
-                    if (consumerGroupOffset == null) {
-                        log.trace("[KTS] Waiting for offset commit for topic {} in group {}: topic is not under capture",
-                                tp.topic(), consumerGroup);
-                    } else {
-                        log.trace("[KTS] Waiting for offset commit for topic {} in group {}: [topic offset: {} != group offset: {}]",
-                                tp.topic(), consumerGroup, consumerGroupOffset, topicOffset);
+                if (consumerGroupOffset != null && consumerGroupOffset != topicOffset) {
+                    try {
+                        Thread.sleep(OFFSET_COMMIT_WAIT_TIME); // NOSONAR magic #
                     }
-                    if (consumerGroupOffset != null && consumerGroupOffset != topicOffset) {
-                        try {
-                            Thread.sleep(OFFSET_COMMIT_WAIT_TIME); // NOSONAR magic #
-                        }
-                        catch (@SuppressWarnings("unused") InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                        log.warn("[KTS] Consumer group {} offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
-                                        "Waiting for further message processing before proceeding. Refreshing end offsets and reevaluating.",
-                                consumerGroup, tp.topic(), consumerGroupOffset, topicOffset);
-                        topicsOffsets = getOffsetsForTopics(adminClient, topics);
-                        List<TopicPartition> sortedTopicPartitions = topicsOffsets.keySet().stream()
-                                .sorted((a, b) -> a.topic().equals(tp.topic()) ? -1 : b.topic().equals(tp.topic()) ? 1 : 0)
-                                .toList();
-                        topicQueue.clear();
-                        topicQueue.addAll(sortedTopicPartitions);
+                    catch (@SuppressWarnings("unused") InterruptedException e) {
+                        Thread.currentThread().interrupt();
                     }
+                    log.warn("[KTS] Consumer group {} offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
+                                    "Waiting for further message processing before proceeding. Refreshing end offsets and reevaluating.",
+                            consumerGroup, tp.topic(), consumerGroupOffset, topicOffset);
+                    topicsOffsets = getOffsetsForTopics(adminClient, topics);
+                    List<TopicPartition> sortedTopicPartitions = topicsOffsets.keySet().stream()
+                            .sorted((a, b) -> a.topic().equals(tp.topic()) ? -1 : b.topic().equals(tp.topic()) ? 1 : 0)
+                            .toList();
+                    topicQueue.clear();
+                    topicQueue.addAll(sortedTopicPartitions);
                 }
             }
         }
