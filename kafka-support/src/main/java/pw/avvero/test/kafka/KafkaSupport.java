@@ -24,7 +24,7 @@ import static org.apache.kafka.clients.admin.AdminClientConfig.BOOTSTRAP_SERVERS
 public class KafkaSupport {
 
     public static int OFFSET_COMMIT_WAIT_ATTEMPTS_MAX = 200;
-    public static int OFFSET_COMMIT_WAIT_TIME = 50;
+    public static int OFFSET_COMMIT_WAIT_TIME = 10;
 
     /**
      * Waits for the partition assignment for all Kafka listener containers in the application context.
@@ -42,22 +42,25 @@ public class KafkaSupport {
         //
         KafkaListenerEndpointRegistry registry = applicationContext.getBean(KafkaListenerEndpointRegistry.class);
         log.debug("[KTS] Waiting for partition assignment is requested");
+        long startTime = System.currentTimeMillis();
         for (MessageListenerContainer messageListenerContainer : registry.getListenerContainers()) {
-            long startTime = System.currentTimeMillis();
+            long partStartTime = System.currentTimeMillis();
             log.debug("[KTS] Waiting for partition assignment started for {}", messageListenerContainer.getListenerId());
             int partitions = ContainerTestUtils.waitForAssignment(messageListenerContainer, 1);
-            long gauge = System.currentTimeMillis() - startTime;
+            long partGauge = System.currentTimeMillis() - partStartTime;
             if (partitions > 0) {
                 String topics = Objects.requireNonNull(messageListenerContainer.getAssignedPartitions()).stream()
                         .map(TopicPartition::topic).collect(Collectors.joining(", "));
                 log.debug("[KTS] Waiting for partition assignment for {} is succeeded in {} ms, topics: {}",
-                        messageListenerContainer.getListenerId(), gauge, topics);
+                        messageListenerContainer.getListenerId(), partGauge, topics);
             } else {
                 log.error("[KTS] Waiting for partition assignment for {} is failed in {} ms",
-                        messageListenerContainer.getListenerId(), gauge);
+                        messageListenerContainer.getListenerId(), partGauge);
             }
         }
-        log.debug("[KTS] At least one partition is assigned for every container");
+        long gauge = System.currentTimeMillis() - startTime;
+        log.debug("[KTS] Waiting for partition assignment is finished in {} ms. " +
+                "At least one partition is assigned for every container", gauge);
     }
 
     /**
@@ -154,11 +157,12 @@ public class KafkaSupport {
         waitForPartitionOffsetCommitForPartitions(adminClient, topicPartitions, consumerGroups);
     }
 
+    static ThreadLocal<Long> totalOffsetInThread = new ThreadLocal<>(); //experimental
+
     public static void waitForPartitionOffsetCommitForPartitions(AdminClient adminClient,
                                                                  Set<TopicPartition> topicPartitions,
                                                                  Set<String> consumerGroups)
             throws InterruptedException, ExecutionException {
-        log.debug("[KTS] Waiting for offset commit is requested");
         long startTime = System.currentTimeMillis();
         int attempt = 0;
         boolean offsetCommitted = false;
@@ -167,7 +171,15 @@ public class KafkaSupport {
                 throw new RuntimeException("Exceeded maximum attempts (" + OFFSET_COMMIT_WAIT_ATTEMPTS_MAX
                         + ") waiting for offset commit for partitions.");
             }
+            log.debug("[KTS] Waiting for offset commit is requested, attempt {}", attempt);
             Map<TopicPartition, Long> topicsOffsets = getOffsetsForPartitions(adminClient, topicPartitions);
+            Long totalOffset = topicsOffsets.values().stream().mapToLong(Long::longValue).sum();
+            if (totalOffset.equals(totalOffsetInThread.get())) {
+                log.debug("[KTS] Topic offset is not changed");
+//                log.debug("[KTS] Waiting for offset commit is finished in {} ms", System.currentTimeMillis() - startTime);
+//                return;
+            }
+            totalOffsetInThread.set(totalOffset);
             // Get current offsets for partitions
             Map<String, Map<TopicPartition, Long>> consumerGroupsOffsets = getOffsetsForConsumerGroups(adminClient,
                     consumerGroups, topicPartitions);
@@ -192,17 +204,20 @@ public class KafkaSupport {
                 Long consumerGroupOffset = consumerGroupsOffsets
                         .getOrDefault(consumerGroup, Map.of())
                         .get(topicPartition);
-                // todo what does it mean that consumerGroupOffset is null?
-                if (consumerGroupOffset == null) {
-                    log.trace("[KTS] Waiting for offset commit for topic {} in group {}: topic is not under capture",
+                if (consumerGroupOffset == null) { // There is no consumer in Consumer group for topic
+                    log.trace("[KTS] Waiting for offset commit for topic '{}' in group '{}': consumer group offset is null",
                             topicPartition.topic(), consumerGroup);
+                    continue;
                 }
                 Long partitionOffset = topicsOffsets.get(topicPartition);
-                if (consumerGroupOffset != null && !consumerGroupOffset.equals(partitionOffset)) {
-                    log.warn("[KTS] Consumer group {} offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
+                if (partitionOffset != null && !partitionOffset.equals(0L) && !partitionOffset.equals(consumerGroupOffset)) {
+                    log.warn("[KTS] Consumer group '{}' offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
                                     "Waiting for further message processing before proceeding. Refreshing end offsets and reevaluating.",
                             consumerGroup, topicPartition.topic(), consumerGroupOffset, partitionOffset);
                     return false;
+                } else {
+                    log.debug("[KTS] Consumer group '{}' offset for topic '{}' is {}, which is equal to the topic offset {}. ",
+                            consumerGroup, topicPartition.topic(), consumerGroupOffset, partitionOffset);
                 }
             }
         }
