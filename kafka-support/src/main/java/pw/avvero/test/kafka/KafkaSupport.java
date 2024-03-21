@@ -2,6 +2,7 @@ package pw.avvero.test.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.autoconfigure.kafka.KafkaConnectionDetails;
 import org.springframework.context.ApplicationContext;
@@ -157,7 +158,7 @@ public class KafkaSupport {
         waitForPartitionOffsetCommitForPartitions(adminClient, topicPartitions, consumerGroups);
     }
 
-    static ThreadLocal<Long> totalOffsetInThread = new ThreadLocal<>(); //experimental
+    static ThreadLocal<Long> topicsOffsetsTotalInThread = new ThreadLocal<>(); //experimental
 
     public static void waitForPartitionOffsetCommitForPartitions(AdminClient adminClient,
                                                                  Set<TopicPartition> topicPartitions,
@@ -173,18 +174,28 @@ public class KafkaSupport {
             }
             log.debug("[KTS] Waiting for offset commit is requested, attempt {}", attempt);
             Map<TopicPartition, Long> topicsOffsets = getOffsetsForPartitions(adminClient, topicPartitions);
-            Long totalOffset = topicsOffsets.values().stream().mapToLong(Long::longValue).sum();
-            if (totalOffset.equals(totalOffsetInThread.get())) {
-                log.debug("[KTS] Topic offset is not changed");
-//                log.debug("[KTS] Waiting for offset commit is finished in {} ms", System.currentTimeMillis() - startTime);
-//                return;
+            Long topicsOffsetsTotal = topicsOffsets.values().stream().mapToLong(Long::longValue).sum();
+            if (topicsOffsetsTotal.equals(topicsOffsetsTotalInThread.get())) {
+                log.debug("[KTS] Topic offset is not changed; Waiting for offset commit is finished in {} ms",
+                        System.currentTimeMillis() - startTime);
+                return;
             }
-            totalOffsetInThread.set(totalOffset);
             // Get current offsets for partitions
             Map<String, Map<TopicPartition, Long>> consumerGroupsOffsets = getOffsetsForConsumerGroups(adminClient,
                     consumerGroups, topicPartitions);
             offsetCommitted = checkOffsetCommitted(topicPartitions, consumerGroups, topicsOffsets, consumerGroupsOffsets);
-            if (!offsetCommitted) {
+            if (offsetCommitted) {
+                //Do recheck
+                Long topicsOffsetsTotalFinish = getOffsetsForPartitions(adminClient, topicPartitions).values()
+                        .stream().mapToLong(Long::longValue).sum();
+                offsetCommitted = topicsOffsetsTotal.equals(topicsOffsetsTotalFinish);
+            }
+            //
+            if (offsetCommitted) {
+                topicsOffsetsTotalInThread.set(topicsOffsetsTotal);
+            } else {
+                log.warn("[KTS] Some offsets are not equal. Waiting for further message processing before proceeding. " +
+                        "Refreshing end offsets and reevaluating.");
                 try {
                     Thread.sleep(OFFSET_COMMIT_WAIT_TIME); // NOSONAR magic #
                 } catch (@SuppressWarnings("unused") InterruptedException e) {
@@ -199,30 +210,28 @@ public class KafkaSupport {
                                                 Set<String> consumerGroups,
                                                 Map<TopicPartition, Long> topicsOffsets,
                                                 Map<String, Map<TopicPartition, Long>> consumerGroupsOffsets) {
+        boolean result = true;
+        OffsetSnapshotFrame offsetSnapshotFrame = new OffsetSnapshotFrame();
         for (String consumerGroup : consumerGroups) {
             for (TopicPartition topicPartition : topicPartitions) {
                 Long consumerGroupOffset = consumerGroupsOffsets
                         .getOrDefault(consumerGroup, Map.of())
                         .get(topicPartition);
                 if (consumerGroupOffset == null) { // There is no consumer in Consumer group for topic
-                    log.trace("[KTS] Waiting for offset commit for topic '{}' in group '{}': consumer group offset is null",
-                            topicPartition.topic(), consumerGroup);
                     continue;
                 }
                 Long partitionOffset = topicsOffsets.get(topicPartition);
-                if (partitionOffset != null && !partitionOffset.equals(0L) && !partitionOffset.equals(consumerGroupOffset)) {
-                    log.warn("[KTS] Consumer group '{}' offset for topic '{}' is {}, which is not equal to the topic offset {}. " +
-                                    "Waiting for further message processing before proceeding. Refreshing end offsets and reevaluating.",
-                            consumerGroup, topicPartition.topic(), consumerGroupOffset, partitionOffset);
-                    return false;
-                } else {
-                    log.debug("[KTS] Consumer group '{}' offset for topic '{}' is {}, which is equal to the topic offset {}. ",
-                            consumerGroup, topicPartition.topic(), consumerGroupOffset, partitionOffset);
-                }
+                boolean equal = partitionOffset == null || partitionOffset == 0L || partitionOffset.equals(consumerGroupOffset);
+                result = result && equal;
+                //
+                offsetSnapshotFrame.append(consumerGroup, topicPartition, consumerGroupOffset, partitionOffset);
             }
+            offsetSnapshotFrame.split();
         }
-        return true;
+        log.debug(offsetSnapshotFrame.toString());
+        return result;
     }
+
 
     public static Set<TopicPartition> getPartitions(AdminClient adminClient, Set<String> topics)
             throws ExecutionException, InterruptedException {
@@ -242,7 +251,7 @@ public class KafkaSupport {
             throws ExecutionException, InterruptedException {
         Map<TopicPartition, OffsetSpec> topicPartitionsWithSpecs = topicPartitions.stream()
                 .collect(toMap(tp -> tp, tp -> OffsetSpec.latest()));
-        return adminClient.listOffsets(topicPartitionsWithSpecs)
+        return adminClient.listOffsets(topicPartitionsWithSpecs, new ListOffsetsOptions(IsolationLevel.READ_COMMITTED))
                 .all()
                 .get()
                 .entrySet()

@@ -65,3 +65,34 @@ from the specified topics during test execution, storing them for later verifica
 ### Example
 
 Example for application with tests is provided in module [example-testcontainers](https://github.com/avvero/kafka-test-support/tree/sb3/example-testcontainers).
+
+### Offset snapshot frame
+
+Method `KafkaSupport#waitForPartitionOffsetCommit` logs offset snapshot frame and highlights topics if consumer group
+is not finished with topic consumption.
+
+```groovy
+ ______________________________________________________________________________________________________
+| Consumer group             | Partition                                              | CGF    | PO    |
+| test                       | topic0-0                                               | 0      | 0     |          
+| test                       | topic1-0                                               | 1      | 1     |          
+| test                       | topic4-0                                               | 0      | 0     |          
+| test                       | topic5-0                                               | 0      | 0     |          
+| test                       | topic2-0                                               | 0      | 0     |          
+| test                       | topic3-0                                               | 0      | 0     |          
+| test                       | topic8-0                                               | 0      | 0     |          
+| test                       | topic9-0                                               | 0      | 0     |          
+| test                       | topic6-0                                               | 0      | 0     |          
+| test                       | topic7-0                                               | 0      | 0     |          
+| test                       | topicBroken-0                                          | 1      | 1     |          
+| test                       | topicBroken-retry-0                                    | 1      | 2     | <--          
+| test                       | topic10-0                                              | 0      | 0     |          
+| test                       | topicBroken-dlt-0                                      | 1      | 1     |          
+ ______________________________________________________________________________________________________
+| KafkaSupportRetryableTopic | topicBroken-retry-0                                    | 2      | 2     |          
+ ______________________________________________________________________________________________________
+| KafkaSupportRetryableTopic | topicBroken-0                                          | 1      | 1     |          
+ ______________________________________________________________________________________________________
+| KafkaSupportRetryableTopic | topicBroken-dlt-0                                      | 1      | 1     |          
+ ______________________________________________________________________________________________________
+```
