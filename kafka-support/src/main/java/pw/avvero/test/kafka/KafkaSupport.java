@@ -2,7 +2,6 @@ package pw.avvero.test.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
-import org.apache.kafka.common.IsolationLevel;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.autoconfigure.kafka.KafkaConnectionDetails;
 import org.springframework.context.ApplicationContext;
@@ -181,8 +180,13 @@ public class KafkaSupport {
                 return;
             }
             // Get current offsets for partitions
+            // We can take only those partition that with offset > 0, but on long run every one will become like it
+            Set<TopicPartition> topicPartitionsToCheck = topicsOffsets.entrySet().stream()
+                    .filter(e -> !e.getValue().equals(0L))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
             Map<String, Map<TopicPartition, Long>> consumerGroupsOffsets = getOffsetsForConsumerGroups(adminClient,
-                    consumerGroups, topicPartitions);
+                    consumerGroups, topicPartitionsToCheck);
             offsetCommitted = checkOffsetCommitted(topicPartitions, consumerGroups, topicsOffsets, consumerGroupsOffsets);
             if (offsetCommitted) {
                 //Do recheck
@@ -251,7 +255,7 @@ public class KafkaSupport {
             throws ExecutionException, InterruptedException {
         Map<TopicPartition, OffsetSpec> topicPartitionsWithSpecs = topicPartitions.stream()
                 .collect(toMap(tp -> tp, tp -> OffsetSpec.latest()));
-        return adminClient.listOffsets(topicPartitionsWithSpecs, new ListOffsetsOptions(IsolationLevel.READ_COMMITTED))
+        return adminClient.listOffsets(topicPartitionsWithSpecs)
                 .all()
                 .get()
                 .entrySet()
