@@ -26,7 +26,7 @@ topic with a mechanism for storing messages and an access interface to them.
 First, include the necessary dependency in your project's build configuration to utilize Record Captor:
 
 ```gradle
-testImplementation 'pw.avvero:kafka-test-support:1.0.0'
+testImplementation 'pw.avvero:kafka-test-support:1.1.0'
 ```
 
 This library provides the necessary components to integrate Record Captor into your test suite.

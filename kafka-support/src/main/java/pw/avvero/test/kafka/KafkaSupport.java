@@ -119,8 +119,6 @@ public class KafkaSupport {
      * attempts is reached.
      *
      * @param bootstrapServers The list of bootstrap servers for the Kafka cluster.
-     * @throws InterruptedException if the thread is interrupted while waiting for the offsets to commit.
-     * @throws ExecutionException   if an error occurs during the fetching of consumer group or topic information.
      */
     public static void waitForPartitionOffsetCommit(List<String> bootstrapServers) {
         try (AdminClient adminClient = AdminClient.create(singletonMap(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
