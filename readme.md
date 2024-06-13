@@ -1,7 +1,7 @@
 # Kafka test support
 
 <div align="center">
-    <img src="assets/image.png" width="400" height="auto">
+    <img src="assets/image.jpg" width="400" height="auto">
 </div>
 
 Provides utility functions for Kafka integration within Spring applications, focusing on partition assignment
