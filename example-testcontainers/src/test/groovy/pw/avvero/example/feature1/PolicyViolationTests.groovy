@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate
 import pw.avvero.example.KafkaContainerConfiguration
 import pw.avvero.example.RecordCaptorConfiguration
 import pw.avvero.example.RequestCaptor
+import pw.avvero.example.RestExpectation
 import pw.avvero.test.kafka.KafkaSupport
 import pw.avvero.test.kafka.RecordCaptor
 import spock.lang.Shared
@@ -46,38 +47,30 @@ class PolicyViolationTests extends Specification {
     @Autowired
     MockMvc mockMvc
     @Shared
-    MockRestServiceServer restMock
+    RestExpectation restExpectation
 
     def setup() {
-        restMock = MockRestServiceServer.bindTo(restTemplate).ignoreExpectOrder(true).build()
+        restExpectation = new RestExpectation(restTemplate)
     }
 
     def cleanup() {
-        restMock.reset()
+        restExpectation.cleanup()
     }
 
     def "User Message Processing with OpenAI"() {
         setup:
         KafkaSupport.waitForPartitionAssignment(applicationContext)                           // 1
         and:
-        def openaiRequestCaptor = new RequestCaptor()
-        restMock.expect(manyTimes(), requestTo("https://api.openai.com/v1/chat/completions")) // 2
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(openaiRequestCaptor)
-                .andRespond(withBadRequest().contentType(APPLICATION_JSON).body("""{
-                                              "error": {
-                                                "code": "content_policy_violation",
-                                                "message": "Your request was rejected as a result of our safety system."
-                                              }
-                                            }"""))
-        and:
-        def telegramRequestCaptor = new RequestCaptor()
-        restMock.expect(manyTimes(), requestTo("https://api.telegram.org/sendMessage"))       // 3
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(telegramRequestCaptor)
-                .andRespond(withSuccess('{}', APPLICATION_JSON))
+        def openaiRequestCaptor = restExpectation.openai.completions(withBadRequest().contentType(APPLICATION_JSON)
+                .body("""{
+                  "error": {
+                    "code": "content_policy_violation",
+                    "message": "Your request was rejected as a result of our safety system."
+                  }
+                }"""))
+        def telegramRequestCaptor = restExpectation.telegram.sendMessage(withSuccess('{}', APPLICATION_JSON))
         when:
-        mockMvc.perform(post("/telegram/webhook")                                             // 4
+        mockMvc.perform(post("/telegram/webhook")                                             // 2
                 .contentType(APPLICATION_JSON_VALUE)
                 .content("""{
                   "message": {
@@ -92,9 +85,9 @@ class PolicyViolationTests extends Specification {
                 }""".toString())
                 .accept(APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
-        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)                         // 5
+        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)                         // 3
         then:
-        openaiRequestCaptor.times == 1                                                        // 6
+        openaiRequestCaptor.times == 1                                                        // 4
         JSONAssert.assertEquals("""{
             "content": "Hello!"
         }""", openaiRequestCaptor.bodyString, false)
