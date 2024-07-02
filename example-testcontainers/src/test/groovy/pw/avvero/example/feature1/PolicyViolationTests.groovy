@@ -5,16 +5,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
-import org.springframework.http.HttpMethod
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.web.client.RestTemplate
 import pw.avvero.example.KafkaContainerConfiguration
 import pw.avvero.example.RecordCaptorConfiguration
-import pw.avvero.example.RequestCaptor
+
 import pw.avvero.example.RestExpectation
 import pw.avvero.test.kafka.KafkaSupport
 import pw.avvero.test.kafka.RecordCaptor
@@ -23,9 +21,6 @@ import spock.lang.Specification
 
 import static org.springframework.http.MediaType.APPLICATION_JSON
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE
-import static org.springframework.test.web.client.ExpectedCount.manyTimes
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post

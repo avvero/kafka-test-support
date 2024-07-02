@@ -14,7 +14,7 @@ import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.web.client.RestTemplate
 import pw.avvero.example.KafkaContainerConfiguration
-import pw.avvero.example.RequestCaptor
+import pw.avvero.test.http.RequestCaptor
 import pw.avvero.test.kafka.KafkaSupport
 import spock.lang.Shared
 import spock.lang.Specification
