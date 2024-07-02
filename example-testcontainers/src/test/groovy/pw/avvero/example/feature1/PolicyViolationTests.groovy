@@ -108,5 +108,19 @@ class PolicyViolationTests extends Specification {
         def message = recordCaptor.getRecords("topicC", "20000000").last
         then:
         message != null
+        JSONAssert.assertEquals("""{
+          "webhookMessage": {
+            "message": {
+              "chat": {
+                "id": "20000000"
+              },
+              "text": "Hello!"
+            }
+          },
+          "error": {
+            "code": "content_policy_violation",
+            "message": "Your request was rejected as a result of our safety system."
+          }
+        }""", message.value as String, false)
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import pw.avvero.example.feature1.OpenaiService.OpenaiException;
+import pw.avvero.example.feature1.TelegramService.SendMessageRequest;
 
 import java.util.concurrent.ExecutionException;
 
@@ -23,20 +24,16 @@ public class ServiceB {
     private final KafkaTemplate<Object, Object> kafkaTemplate;
 
     @KafkaListener(id = "topicAConsumer", topics = "topicA")
-    public void consume(@Payload String webhookRequest) throws JsonProcessingException, ExecutionException,
+    public void consume(@Payload String webhookRequestString) throws JsonProcessingException, ExecutionException,
             InterruptedException {
-        TelegramWebhookMessage webhookMessage = objectMapper.readValue(webhookRequest, TelegramWebhookMessage.class);
+        TelegramWebhookMessage webhookRequest = objectMapper.readValue(webhookRequestString, TelegramWebhookMessage.class);
+        String chatId = webhookRequest.getMessage().getChat().getId();
         try {
-            String openAiResponseContent = openaiService.process(webhookMessage.getMessage().getText());
-            TelegramService.SendMessageRequest sendMessageRequest = new TelegramService.SendMessageRequest(
-                    webhookMessage.getMessage().getChat().getId(),
-                    openAiResponseContent);
-            sendMessage("topicB", webhookMessage.getMessage().getChat().getId(), sendMessageRequest);
+            String openAiResponseContent = openaiService.process(webhookRequest.getMessage().getText());
+            sendMessage("topicB", chatId, new SendMessageRequest(chatId, openAiResponseContent));
         } catch (OpenaiException e) {
-            TelegramService.SendMessageRequest sendMessageRequest = new TelegramService.SendMessageRequest(
-                    webhookMessage.getMessage().getChat().getId(), e.getMessage());
-            sendMessage("topicB", webhookMessage.getMessage().getChat().getId(), sendMessageRequest);
-            sendMessage("topicC", webhookMessage.getMessage().getChat().getId(), e.getMessage());
+            sendMessage("topicB", chatId, new SendMessageRequest(chatId, e.getMessage()));
+            sendMessage("topicC", chatId, new MessageProcessingError(webhookRequest, new ErrorDetails(e.getCode(), e.getMessage())));
         }
     }
 
@@ -45,8 +42,11 @@ public class ServiceB {
         Message message = MessageBuilder
                 .withPayload(objectMapper.writeValueAsString(payload))
                 .setHeader(KafkaHeaders.TOPIC, topic)
-                .setHeader(KafkaHeaders.RECEIVED_KEY, key)
+                .setHeader(KafkaHeaders.KEY, key)
                 .build();
         kafkaTemplate.send(message).get();
     }
+
+    public record MessageProcessingError(TelegramWebhookMessage webhookMessage, ErrorDetails error){}
+    public record ErrorDetails(String code, String message){}
 }
