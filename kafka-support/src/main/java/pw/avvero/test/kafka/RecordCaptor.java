@@ -49,4 +49,8 @@ public class RecordCaptor implements RecordCaptorAccess {
             return supplier.get();
         };
     }
+
+    public void clear() {
+        topicKeyRecords.clear();
+    }
 }

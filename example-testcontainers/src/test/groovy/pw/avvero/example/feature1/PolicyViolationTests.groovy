@@ -55,7 +55,7 @@ class PolicyViolationTests extends Specification {
     def "User Message Processing with OpenAI"() {
         setup:
         KafkaSupport.waitForPartitionAssignment(applicationContext)                           // 1
-        and:
+        and:                                                                                  // 2
         def openaiRequestCaptor = restExpectation.openai.completions(withBadRequest().contentType(APPLICATION_JSON)
                 .body("""{
                   "error": {
@@ -65,7 +65,7 @@ class PolicyViolationTests extends Specification {
                 }"""))
         def telegramRequestCaptor = restExpectation.telegram.sendMessage(withSuccess('{}', APPLICATION_JSON))
         when:
-        mockMvc.perform(post("/telegram/webhook")                                             // 2
+        mockMvc.perform(post("/telegram/webhook")                                             // 3
                 .contentType(APPLICATION_JSON_VALUE)
                 .content("""{
                   "message": {
@@ -80,9 +80,9 @@ class PolicyViolationTests extends Specification {
                 }""".toString())
                 .accept(APPLICATION_JSON_VALUE))
                 .andExpect(status().isOk())
-        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)                         // 3
+        KafkaSupport.waitForPartitionOffsetCommit(applicationContext)                         // 4
         then:
-        openaiRequestCaptor.times == 1                                                        // 4
+        openaiRequestCaptor.times == 1                                                        // 5
         JSONAssert.assertEquals("""{
             "content": "Hello!"
         }""", openaiRequestCaptor.bodyString, false)
@@ -92,7 +92,7 @@ class PolicyViolationTests extends Specification {
             "chatId": "20000000",
             "text": "Your request was rejected as a result of our safety system."
         }""", telegramRequestCaptor.bodyString, false)
-        when:
+        when:                                                                                 // 6
         def message = recordCaptor.getRecords("topicC", "20000000").last
         then:
         message != null
