@@ -29,13 +29,36 @@ class RecordCaptorTests extends Specification {
     }
 
     @Unroll
-    def "Find captured record by header"() {
+    def "Find captured record by header filter"() {
         setup:
         def captor = new RecordCaptor()
         when:
         captor.capture(RecordSnapshot.builder().topic("topic1").headers(["header1": "value1"]).build())
         then:
         captor.getRecords("topic1", predicateHeader(headerName, headerValue)).size() == records
+        where:
+        headerName | headerValue || records
+        "header1"  | "value1"    || 1
+        "header0"  | "value1"    || 0
+        "header1"  | "value0"    || 0
+
+    }
+
+    @Unroll
+    def "Find captured record by header key"() {
+        setup:
+        def captor = new RecordCaptor()
+        def header1Key = new RecordSnapshotKey(){
+            @Override
+            String getValue(RecordSnapshot record) {
+                return String.valueOf(record.headers["header1"])
+            }
+        }
+        captor.registerKey("header1", header1Key)
+        when:
+        captor.capture(RecordSnapshot.builder().topic("topic1").headers(["header1": "value1"]).build())
+        then:
+        captor.getRecords("topic1", headerName, headerValue).size() == records
         where:
         headerName | headerValue || records
         "header1"  | "value1"    || 1
