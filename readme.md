@@ -25,8 +25,9 @@ Usage involves invoking static methods with the necessary Kafka and Spring conte
 
 ## Publications
 
-- [Изоляция в тестах с Kafka](https://habr.com/ru/articles/797049)
-- [Isolation in Testing with Kafka](https://medium.com/@avvero.abernathy/isolation-in-testing-with-kafka-16e00f5d5d7e)
+Article on Habr [Изоляция в тестах с Kafka](https://habr.com/ru/articles/797049)
+
+Article on Medium [Isolation in Testing with Kafka](https://medium.com/@avvero.abernathy/isolation-in-testing-with-kafka-16e00f5d5d7e)
 
 ## Using Record Captor
 
@@ -64,28 +65,3 @@ public class RecordCaptorConfiguration {
 
 ### Step 3: Specify Topics to Capture
 Specify the list of Kafka topics from which messages should be captured. This is done by setting 
-the `test.record-captor.topics` property with a comma-separated list of topic names.
-
-```properties
-test.record-captor.topics=topic1,topicA,topicB
-```
-
-### Usage
-With these steps completed, Record Captor is ready for use in your test suite. It will automatically capture messages
-from the specified topics during test execution, storing them for later verification. 
-
-### Example
-
-Example for application with tests is provided in module [example-testcontainers](https://github.com/avvero/kafka-test-support/tree/sb3/example-testcontainers).
-
-### Offset snapshot frame
-
-Method `KafkaSupport#waitForPartitionOffsetCommit` logs offset snapshot frame and highlights topics if consumer group
-is not finished with topic consumption.
-
-```groovy
- ______________________________________________________________________________________________________
-| Consumer group             | Partition                                              | CGF    | PO    |
-| test                       | topic0-0                                               | 0      | 0     |          
-| test                       | topic1-0                                               | 1      | 1     |          
-| test                       | topic4-0                                               | 0      | 0     |          
