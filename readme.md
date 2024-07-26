@@ -25,9 +25,9 @@ Usage involves invoking static methods with the necessary Kafka and Spring conte
 
 ## Publications
 
-Article on Habr [Изоляция в тестах с Kafka](https://habr.com/ru/articles/797049)
+Article on Habr - [Изоляция в тестах с Kafka](https://habr.com/ru/articles/797049)
 
-Article on Medium [Isolation in Testing with Kafka](https://medium.com/@avvero.abernathy/isolation-in-testing-with-kafka-16e00f5d5d7e)
+Article on Medium - [Isolation in Testing with Kafka](https://medium.com/@avvero.abernathy/isolation-in-testing-with-kafka-16e00f5d5d7e)
 
 ## Using Record Captor
 
@@ -59,9 +59,3 @@ public class RecordCaptorConfiguration {
     @Bean
     RecordCaptorConsumer recordCaptorConsumer(RecordCaptor recordCaptor) {
         return new RecordCaptorConsumer(recordCaptor, new RecordSnapshotMapper());
-    }
-}
-```
-
-### Step 3: Specify Topics to Capture
-Specify the list of Kafka topics from which messages should be captured. This is done by setting 
