@@ -1,3 +1,10 @@
+### Overview
+**Problem**: Writing and maintaining integration tests with Kafka is challenging due to the complexity of working with topics.\
+**Solution**: An approach that ensures test isolation and provides tools for comprehensive message access.\
+**Status**: Completed, article is published, currently using.
+
+----
+
 # Kafka test support
 
 <div align="center">
@@ -15,6 +22,11 @@ Key features include:
 - Waiting for offset commits across consumer groups and topics, ensuring message processing completeness.
 
 Usage involves invoking static methods with the necessary Kafka and Spring context configurations.
+
+## Publications
+
+- [Изоляция в тестах с Kafka](https://habr.com/ru/articles/797049)
+- [Isolation in Testing with Kafka](https://medium.com/@avvero.abernathy/isolation-in-testing-with-kafka-16e00f5d5d7e)
 
 ## Using Record Captor
 
@@ -77,22 +89,3 @@ is not finished with topic consumption.
 | test                       | topic0-0                                               | 0      | 0     |          
 | test                       | topic1-0                                               | 1      | 1     |          
 | test                       | topic4-0                                               | 0      | 0     |          
-| test                       | topic5-0                                               | 0      | 0     |          
-| test                       | topic2-0                                               | 0      | 0     |          
-| test                       | topic3-0                                               | 0      | 0     |          
-| test                       | topic8-0                                               | 0      | 0     |          
-| test                       | topic9-0                                               | 0      | 0     |          
-| test                       | topic6-0                                               | 0      | 0     |          
-| test                       | topic7-0                                               | 0      | 0     |          
-| test                       | topicBroken-0                                          | 1      | 1     |          
-| test                       | topicBroken-retry-0                                    | 1      | 2     | <--          
-| test                       | topic10-0                                              | 0      | 0     |          
-| test                       | topicBroken-dlt-0                                      | 1      | 1     |          
- ______________________________________________________________________________________________________
-| KafkaSupportRetryableTopic | topicBroken-retry-0                                    | 2      | 2     |          
- ______________________________________________________________________________________________________
-| KafkaSupportRetryableTopic | topicBroken-0                                          | 1      | 1     |          
- ______________________________________________________________________________________________________
-| KafkaSupportRetryableTopic | topicBroken-dlt-0                                      | 1      | 1     |          
- ______________________________________________________________________________________________________
-```
