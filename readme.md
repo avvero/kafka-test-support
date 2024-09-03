@@ -1,3 +1,10 @@
+### Overview
+**Problem**: Writing and maintaining integration tests with Kafka is challenging due to the complexity of working with topics.\
+**Solution**: An approach that ensures test isolation and provides tools for comprehensive message access.\
+**Status**: Completed, article is published, currently using.
+
+----
+
 # Kafka test support
 
 <div align="center">
@@ -15,6 +22,12 @@ Key features include:
 - Waiting for offset commits across consumer groups and topics, ensuring message processing completeness.
 
 Usage involves invoking static methods with the necessary Kafka and Spring context configurations.
+
+## Publications
+
+Article on Habr - [Изоляция в тестах с Kafka](https://habr.com/ru/articles/797049)
+
+Article on Medium - [Isolation in Testing with Kafka](https://medium.com/@avvero.abernathy/isolation-in-testing-with-kafka-16e00f5d5d7e)
 
 ## Using Record Captor
 
@@ -46,53 +59,3 @@ public class RecordCaptorConfiguration {
     @Bean
     RecordCaptorConsumer recordCaptorConsumer(RecordCaptor recordCaptor) {
         return new RecordCaptorConsumer(recordCaptor, new RecordSnapshotMapper());
-    }
-}
-```
-
-### Step 3: Specify Topics to Capture
-Specify the list of Kafka topics from which messages should be captured. This is done by setting 
-the `test.record-captor.topics` property with a comma-separated list of topic names.
-
-```properties
-test.record-captor.topics=topic1,topicA,topicB
-```
-
-### Usage
-With these steps completed, Record Captor is ready for use in your test suite. It will automatically capture messages
-from the specified topics during test execution, storing them for later verification. 
-
-### Example
-
-Example for application with tests is provided in module [example-testcontainers](https://github.com/avvero/kafka-test-support/tree/sb3/example-testcontainers).
-
-### Offset snapshot frame
-
-Method `KafkaSupport#waitForPartitionOffsetCommit` logs offset snapshot frame and highlights topics if consumer group
-is not finished with topic consumption.
-
-```groovy
- ______________________________________________________________________________________________________
-| Consumer group             | Partition                                              | CGF    | PO    |
-| test                       | topic0-0                                               | 0      | 0     |          
-| test                       | topic1-0                                               | 1      | 1     |          
-| test                       | topic4-0                                               | 0      | 0     |          
-| test                       | topic5-0                                               | 0      | 0     |          
-| test                       | topic2-0                                               | 0      | 0     |          
-| test                       | topic3-0                                               | 0      | 0     |          
-| test                       | topic8-0                                               | 0      | 0     |          
-| test                       | topic9-0                                               | 0      | 0     |          
-| test                       | topic6-0                                               | 0      | 0     |          
-| test                       | topic7-0                                               | 0      | 0     |          
-| test                       | topicBroken-0                                          | 1      | 1     |          
-| test                       | topicBroken-retry-0                                    | 1      | 2     | <--          
-| test                       | topic10-0                                              | 0      | 0     |          
-| test                       | topicBroken-dlt-0                                      | 1      | 1     |          
- ______________________________________________________________________________________________________
-| KafkaSupportRetryableTopic | topicBroken-retry-0                                    | 2      | 2     |          
- ______________________________________________________________________________________________________
-| KafkaSupportRetryableTopic | topicBroken-0                                          | 1      | 1     |          
- ______________________________________________________________________________________________________
-| KafkaSupportRetryableTopic | topicBroken-dlt-0                                      | 1      | 1     |          
- ______________________________________________________________________________________________________
-```
