@@ -1,15 +1,12 @@
 package pw.avvero.test.kafka;
 
 import lombok.extern.slf4j.Slf4j;
-import org.awaitility.Awaitility;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * The RecordCaptor class is responsible for capturing and storing Kafka record snapshots based on their topics and keys.
@@ -18,37 +15,36 @@ import java.util.function.Supplier;
 @Slf4j
 public class RecordCaptor {
 
-    private final Map<String, Function<RecordSnapshot, Comparable<?>>> keysRegister = new ConcurrentHashMap<>();
+    private final Map<String, Function<RecordSnapshot, Comparable<?>>> indexRegister = new ConcurrentHashMap<>();
     private static final String DEFAULT_KEY = "MESSAGE_KEY";
     private final Map<String, Map<String, Map<Object, List<RecordSnapshot>>>> topicKeyRecords = new TreeMap<>();
 
     /**
-     * Constructs a RecordCaptor instance and registers a default key "ID" to capture records based on their keys.
+     * Constructs a RecordCaptor instance and registers a default key "MESSAGE_KEY" to capture records.
      */
     public RecordCaptor() {
-        registerKey(DEFAULT_KEY, record -> String.valueOf(record.getKey()));
+        registerIndex(DEFAULT_KEY, record -> String.valueOf(record.getKey()));
     }
 
     /**
-     * Registers a custom key with the specified name and RecordSnapshotKey implementation.
-     * This allows capturing and categorizing records based on custom key criteria.
+     * Registers a custom index with the specified name for capturing and categorizing records.
      *
-     * @param name the name of the custom key.
-     * @param recordSnapshotKey the RecordSnapshotKey implementation used to extract the key value from a record.
+     * @param name the name of the index.
+     * @param recordSnapshotKey a function to extract the key value from a record snapshot.
      */
-    public void registerKey(String name, Function<RecordSnapshot, Comparable<?>> recordSnapshotKey) {
-        keysRegister.putIfAbsent(name, recordSnapshotKey);
+    public void registerIndex(String name, Function<RecordSnapshot, Comparable<?>> recordSnapshotKey) {
+        indexRegister.putIfAbsent(name, recordSnapshotKey);
     }
 
     /**
-     * Captures a RecordSnapshot and stores it in an internal data structure based on its topic and registered keys.
+     * Captures a RecordSnapshot and stores it based on its topic and the registered keys.
      *
-     * @param recordSnapshot the RecordSnapshot to be captured.
+     * @param recordSnapshot the RecordSnapshot to capture.
      */
     public void capture(RecordSnapshot recordSnapshot) {
         log.debug("[KTS] Record captured for topic {} for key {}\n    Headers: {}\n    Value: {}", recordSnapshot.getTopic(),
                 recordSnapshot.getKey(), recordSnapshot.getHeaders(), recordSnapshot.getValue());
-        for (Map.Entry<String, Function<RecordSnapshot, Comparable<?>>> keyRegister : keysRegister.entrySet()) {
+        for (Map.Entry<String, Function<RecordSnapshot, Comparable<?>>> keyRegister : indexRegister.entrySet()) {
             Comparable<?> key = keyRegister.getValue().apply(recordSnapshot);
             topicKeyRecords
                     .computeIfAbsent(recordSnapshot.getTopic(), k -> new ConcurrentHashMap<>())
@@ -59,12 +55,12 @@ public class RecordCaptor {
     }
 
     /**
-     * Retrieves a list of RecordSnapshots for the specified topic, key, and key value.
+     * Retrieves records for the specified topic, key, and key value.
      *
      * @param topic the topic of the records.
      * @param keyName the registered key name.
      * @param keyValue the value of the key to filter records.
-     * @return a list of RecordSnapshots matching the specified topic, key, and key value.
+     * @return a list of RecordSnapshots matching the specified criteria.
      */
     public List<RecordSnapshot> getRecords(String topic, String keyName, Object keyValue) {
         return topicKeyRecords.getOrDefault(topic, Collections.emptyMap())
@@ -73,10 +69,10 @@ public class RecordCaptor {
     }
 
     /**
-     * Retrieves a list of RecordSnapshots for the specified topic and key value using the default message key.
+     * Retrieves records for the specified topic using the default key "MESSAGE_KEY".
      *
      * @param topic the topic of the records.
-     * @param value the value of the key to filter records.
+     * @param value the value of the default key to filter records.
      * @return a list of RecordSnapshots matching the specified topic and key value.
      */
     public List<RecordSnapshot> getRecords(String topic, Object value) {
@@ -84,7 +80,7 @@ public class RecordCaptor {
     }
 
     /**
-     * Retrieves a list of RecordSnapshots for the specified topic that match the provided predicate.
+     * Retrieves records for the specified topic that match the provided predicate.
      *
      * @param topic the topic of the records.
      * @param predicate a predicate to filter records.
