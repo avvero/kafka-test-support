@@ -5,7 +5,7 @@
 
     <groupId>pw.avvero</groupId>
     <artifactId>kafka-test-support</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
 
     <name>Kafka test support</name>
@@ -42,6 +42,7 @@
         <testcontainers.version>1.19.3</testcontainers.version>
         <groovy.version>3.0.19</groovy.version>
         <spock.version>2.3-groovy-3.0</spock.version>
+        <jackson.version>2.15.3</jackson.version>
     </properties>
 
     <dependencies>
@@ -74,7 +75,16 @@
             <artifactId>awaitility</artifactId>
             <version>${awaitility.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -175,7 +185,7 @@
             <plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.3.0</version>
+                <version>0.5.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>central</publishingServerId>

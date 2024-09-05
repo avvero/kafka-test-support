@@ -8,6 +8,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static java.util.Objects.requireNonNullElse;
+
 /**
  * The RecordCaptor class is responsible for capturing and storing Kafka record snapshots based on their topics and keys.
  * It provides methods to register custom keys for filtering and retrieving records based on specific criteria.
@@ -17,6 +19,7 @@ public class RecordCaptor {
 
     private final Map<String, Function<RecordSnapshot, Comparable<?>>> indexRegister = new ConcurrentHashMap<>();
     private static final String DEFAULT_KEY = "MESSAGE_KEY";
+    private static final Object NULL_KEY = new Object();
     private final Map<String, Map<String, Map<Object, List<RecordSnapshot>>>> topicKeyRecords = new TreeMap<>();
 
     /**
@@ -49,7 +52,7 @@ public class RecordCaptor {
             topicKeyRecords
                     .computeIfAbsent(recordSnapshot.getTopic(), k -> new ConcurrentHashMap<>())
                     .computeIfAbsent(keyRegister.getKey(), k -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(key, k -> new CopyOnWriteArrayList<>())
+                    .computeIfAbsent(requireNonNullElse(key, NULL_KEY), k -> new CopyOnWriteArrayList<>())
                     .add(recordSnapshot);
         }
     }
